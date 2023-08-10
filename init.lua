@@ -149,6 +149,14 @@ require('lazy').setup({
         component_separators = '|',
         section_separators = '',
       },
+      sections = {
+        lualine_c = {
+          {
+            'filename',
+            path = 3,
+          }
+        },
+      },
     },
   },
 
@@ -209,7 +217,10 @@ require('lazy').setup({
   {
     "nvim-telescope/telescope-file-browser.nvim",
     dependencies = { "nvim-telescope/telescope.nvim", "nvim-lua/plenary.nvim" }
-  }
+  },
+
+  -- better yanking and pasting
+  "gbprod/yanky.nvim",
 }, {})
 
 -- [[ Setting options ]]
@@ -383,6 +394,24 @@ require('nvim-treesitter.configs').setup {
     },
   },
 }
+
+-- Paste ring setup similar to emacs
+require("yanky").setup({
+  ring = {
+    storage = "memory",
+  },
+  system_clipboard = {
+    sync_with_ring = false,
+  },
+})
+
+vim.keymap.set({"n","x"}, "P", "<Plug>(YankyPutBefore)")
+vim.keymap.set({"n","x"}, "p", "<Plug>(YankyPutAfter)")
+vim.keymap.set({"n","x"}, "gp", "<Plug>(YankyGPutAfter)")
+vim.keymap.set({"n","x"}, "gP", "<Plug>(YankyGPutBefore)")
+
+vim.keymap.set("n", "<c-n>", "<Plug>(YankyCycleForward)")
+vim.keymap.set("n", "<c-p>", "<Plug>(YankyCycleBackward)")
 
 -- Diagnostic keymaps
 vim.keymap.set('n', '[d', vim.diagnostic.goto_prev, { desc = 'Go to previous diagnostic message' })
