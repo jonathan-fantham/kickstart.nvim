@@ -219,6 +219,12 @@ require('lazy').setup({
     dependencies = { "nvim-telescope/telescope.nvim", "nvim-lua/plenary.nvim" }
   },
 
+  -- allow grep args for further filtering
+  {
+    'nvim-telescope/telescope-live-grep-args.nvim',
+    dependencies = { "nvim-telescope/telescope.nvim" }
+  },
+
   -- better yanking and pasting
   "gbprod/yanky.nvim",
 }, {})
@@ -287,7 +293,9 @@ vim.api.nvim_create_autocmd('TextYankPost', {
 
 -- [[ Configure Telescope ]]
 -- See `:help telescope` and `:help telescope.setup()`
-require('telescope').setup {
+local telescope = require('telescope')
+
+telescope.setup {
   defaults = {
     mappings = {
       i = {
@@ -299,15 +307,18 @@ require('telescope').setup {
   pickers = {
     find_files = {
       hidden = true
-    }
+    },
   },
 }
 
 -- Enable telescope fzf native, if installed
-pcall(require('telescope').load_extension, 'fzf')
+pcall(telescope.load_extension, 'fzf')
 
 -- Enable the telescope file browser
-require("telescope").load_extension "file_browser"
+telescope.load_extension "file_browser"
+
+-- Enable the telescope grep args
+telescope.load_extension "live_grep_args"
 
 -- See `:help telescope.builtin`
 vim.keymap.set('n', '<leader>?', require('telescope.builtin').oldfiles, { desc = '[?] Find recently opened files' })
@@ -324,16 +335,18 @@ vim.keymap.set('n', '<leader>gf', require('telescope.builtin').git_files, { desc
 vim.keymap.set('n', '<leader>sf', require('telescope.builtin').find_files, { desc = '[S]earch [F]iles' })
 vim.keymap.set('n', '<leader>sh', require('telescope.builtin').help_tags, { desc = '[S]earch [H]elp' })
 vim.keymap.set('n', '<leader>sw', require('telescope.builtin').grep_string, { desc = '[S]earch current [W]ord' })
-vim.keymap.set('n', '<leader>sg', require('telescope.builtin').live_grep, { desc = '[S]earch by [G]rep' })
+vim.keymap.set('n', '<leader>sg', require('telescope').extensions.live_grep_args.live_grep_args, { desc = '[S]earch by [G]rep' })
+vim.keymap.set('n', '<leader>sb', function() require('telescope.builtin').live_grep({ grep_open_files = true }) end, { desc = '[S]earch in [B]uffers' })
 vim.keymap.set('n', '<leader>sd', require('telescope.builtin').diagnostics, { desc = '[S]earch [D]iagnostics' })
 vim.keymap.set('n', '<leader>fb', ":Telescope file_browser<CR>", { noremap = true, desc = '[F]ile [B]rowser' })
 vim.keymap.set('n', '<leader>ff', ":Telescope file_browser path=%:p:h select_buffer=true<CR>", { noremap = true, desc = 'Open [F]ile in [F]ile browser' })
+vim.keymap.set('n', '<leader>r', require('telescope.builtin').resume, { desc = '[R]esume last telescope session' })
 
 -- [[ Configure Treesitter ]]
 -- See `:help nvim-treesitter`
 require('nvim-treesitter.configs').setup {
   -- Add languages to be installed here that you want installed for treesitter
-  ensure_installed = { 'c', 'cpp', 'go', 'lua', 'python', 'rust', 'tsx', 'typescript', 'vimdoc', 'vim', 'ruby' },
+  ensure_installed = { 'c', 'cpp', 'go', 'lua', 'python', 'rust', 'tsx', 'typescript', 'vimdoc', 'vim', 'ruby', 'vue' },
 
   -- Autoinstall languages that are not installed. Defaults to false (but you can change for yourself!)
   auto_install = false,
@@ -410,8 +423,9 @@ vim.keymap.set({"n","x"}, "p", "<Plug>(YankyPutAfter)")
 vim.keymap.set({"n","x"}, "gp", "<Plug>(YankyGPutAfter)")
 vim.keymap.set({"n","x"}, "gP", "<Plug>(YankyGPutBefore)")
 
-vim.keymap.set("n", "<c-n>", "<Plug>(YankyCycleForward)")
-vim.keymap.set("n", "<c-p>", "<Plug>(YankyCycleBackward)")
+-- reverse the cycle order to make more sense
+vim.keymap.set("n", "<c-p>", "<Plug>(YankyCycleForward)")
+vim.keymap.set("n", "<c-n>", "<Plug>(YankyCycleBackward)")
 
 -- Diagnostic keymaps
 vim.keymap.set('n', '[d', vim.diagnostic.goto_prev, { desc = 'Go to previous diagnostic message' })
@@ -487,6 +501,8 @@ local servers = {
       telemetry = { enable = false },
     },
   },
+
+  vuels = {},
 }
 
 -- Setup neovim lua configuration
@@ -564,3 +580,21 @@ cmp.setup {
 
 -- The line beneath this is called `modeline`. See `:help modeline`
 -- vim: ts=2 sts=2 sw=2 et
+
+-- map command-s to save
+vim.keymap.set("n", "<C-s>", ":w<kEnter>", { desc = "Save in normal mode, must press Esc first" })
+vim.keymap.set("i", "<C-s>", "<Esc>:w<kEnter>i", { desc = "Save in insert mode, saves and puts back in insert mode"})
+
+-- don't use swap files, they are annoying and have never been any use
+vim.opt.swapfile = false
+
+-- add number toggling for relative numbers
+vim.keymap.set("n", "<leader>#", ":setlocal relativenumber!<cr>")
+vim.o.relativenumber = true
+
+-- highlight extra whitespace
+vim.cmd[[highlight ExtraWhitespace ctermbg=red guibg=red]]
+vim.cmd[[match ExtraWhitespace /\s\+$/]]
+
+-- clear whitespace on command
+vim.keymap.set('n', '<leader>cw', ":%s/\\s\\+$//g<CR>", { desc = '[C]lear trailing [W]hitespace characters from the end of lines' })
